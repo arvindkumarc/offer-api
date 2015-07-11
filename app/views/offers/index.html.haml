@@ -27,3 +27,6 @@
         %td= image_tag offer['thumbnail']['lowres'], class: 'thumbnail'
 - else
   .no_offers No offers
+
+- if !@errors.nil?
+  .error= @errors
