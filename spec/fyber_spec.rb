@@ -7,9 +7,12 @@ describe 'fyber' do
     results = %w(a b)
 
     expect(DateTime).to receive('now').and_return(DateTime.new(2015, 10, 10, 1, 1, 1).to_datetime)
-    expect(Net::HTTP).to receive('get').with('api.sponsorpay.com', '/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7').and_return(results)
+    expect(Net::HTTP).to receive('get')
+                             .with('api.sponsorpay.com',
+                             '/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7')
+                             .and_return(results)
 
-    expect(fyber.get_offers).to match_array(results)
+    expect(fyber.get_offers('player1')).to match_array(results)
   end
 
   it "add_signature should add API and SHA1" do
