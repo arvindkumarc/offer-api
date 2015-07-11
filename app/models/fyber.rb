@@ -21,12 +21,15 @@ class Fyber
     hash = add_signature(query_params+ '&')
     response = http_get('api.sponsorpay.com', '/feed/v1/offers.json', query_params.concat('&hashkey=').concat(hash))
 
-    offers_response = JSON.parse(response.body)
+    if response.code != "200"
+      error = "Invalid Response code: " + response.code
+      return FyberResponse.new(JSON.parse("{}"), error)
+    end
 
-    if offers_response['information']['appid'] == APP_ID && response.header['X-Sponsorpay-Response-Signature'] == add_signature(response.body)
-      offers_response
+    if response.header['X-Sponsorpay-Response-Signature'] == add_signature(response.body)
+      return FyberResponse.new(JSON.parse(response.body), nil)
     else
-      JSON.parse("{}")
+      FyberResponse.new(JSON.parse("{}"), "Response Signature mismatch!")
     end
   end
 

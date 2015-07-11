@@ -13,19 +13,9 @@ describe 'fyber' do
         with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
         to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "af23d75634b3bd6dcb2293f31f73fb647405d5d8"})
 
-    expect(fyber.get_offers('player1')).to match_array(JSON.parse(results))
-  end
-
-  it "should reject response if the appid is not matching" do
-    fyber = Fyber.new
-    results = '{"information": {"appid": 159} }'
-
-    expect(DateTime).to receive('now').and_return(DateTime.new(2015, 10, 10, 1, 1, 1).to_datetime)
-    stub_request(:get, "http://api.sponsorpay.com/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1").
-        with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
-        to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "3b570e61e06fa8fcbb81339aef85a1ba4d5ffc7a"})
-
-    expect(fyber.get_offers('player1')).to match_array(JSON.parse("{}"))
+    fyber_get_offers = fyber.get_offers('player1')
+    expect(fyber_get_offers.response).to match_array(JSON.parse(results))
+    expect(fyber_get_offers.errors).to be_nil
   end
 
   it "should reject response if the response signature is not matching" do
@@ -37,7 +27,9 @@ describe 'fyber' do
         with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
         to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "random"})
 
-    expect(fyber.get_offers('player1')).to match_array(JSON.parse("{}"))
+    fyber_get_offers = fyber.get_offers('player1')
+    expect(fyber_get_offers.response).to match_array(JSON.parse("{}"))
+    expect(fyber_get_offers.errors).to eq("Response Signature mismatch!")
   end
 
   it "add_signature should append API_KEY and SHA1" do
