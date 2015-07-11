@@ -1,24 +1,49 @@
 require 'rails_helper'
 require 'rake'
+require 'webmock/rspec'
 
 describe 'fyber' do
+  WebMock.disable_net_connect!(allow_localhost: true)
   it 'should make a call to offer api' do
     fyber = Fyber.new
-    results = %w(a b)
+    results = '{"information": {"appid": 157} }'
 
     expect(DateTime).to receive('now').and_return(DateTime.new(2015, 10, 10, 1, 1, 1).to_datetime)
-    expect(Net::HTTP).to receive('get')
-                             .with('api.sponsorpay.com',
-                             '/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7')
-                             .and_return(results)
+    stub_request(:get, "http://api.sponsorpay.com/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1").
+        with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
+        to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "af23d75634b3bd6dcb2293f31f73fb647405d5d8"})
 
-    expect(fyber.get_offers('player1')).to match_array(results)
+    expect(fyber.get_offers('player1')).to match_array(JSON.parse(results))
   end
 
-  it "add_signature should add API and SHA1" do
+  it "should reject response if the appid is not matching" do
     fyber = Fyber.new
-    signed_value = fyber.add_signature("api=123&test=456")
-    expect(signed_value).to eq("api=123&test=456&hashkey=fe9cf82f51d920b31f0e2311c749f23aff87a167")
+    results = '{"information": {"appid": 159} }'
+
+    expect(DateTime).to receive('now').and_return(DateTime.new(2015, 10, 10, 1, 1, 1).to_datetime)
+    stub_request(:get, "http://api.sponsorpay.com/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1").
+        with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
+        to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "3b570e61e06fa8fcbb81339aef85a1ba4d5ffc7a"})
+
+    expect(fyber.get_offers('player1')).to match_array(JSON.parse("{}"))
+  end
+
+  it "should reject response if the response signature is not matching" do
+    fyber = Fyber.new
+    results = '{"information": {"appid": 159} }'
+
+    expect(DateTime).to receive('now').and_return(DateTime.new(2015, 10, 10, 1, 1, 1).to_datetime)
+    stub_request(:get, "http://api.sponsorpay.com/feed/v1/offers.json?appid=157&device_id=2b6f0cc904d137be2e1730235f5664094b83&format=json&hashkey=f50d9f619009c625cb720c2ffc4862ee865309e7&ip=109.235.143.113&locale=de&offer_types=112&timestamp=1444438861&uid=player1").
+        with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'User-Agent'=>'Ruby'}).
+        to_return(:status => 200, :body => results, :headers => {'X-Sponsorpay-Response-Signature': "random"})
+
+    expect(fyber.get_offers('player1')).to match_array(JSON.parse("{}"))
+  end
+
+  it "add_signature should append API_KEY and SHA1" do
+    fyber = Fyber.new
+    signed_value = fyber.add_signature("api=123&test=456&")
+    expect(signed_value).to eq("fe9cf82f51d920b31f0e2311c749f23aff87a167")
   end
 
   it "should order the parameters before signing" do
