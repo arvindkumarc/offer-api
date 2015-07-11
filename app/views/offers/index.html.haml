@@ -4,20 +4,26 @@
   = form_tag offers_path, method: :get do
 
     =label_tag :uid
-    =text_field_tag :uid, '', class: 'form-control'
+    =text_field_tag :uid, params[:uid], class: 'form-control'
 
     =label_tag :pub0
-    =text_field_tag :pub0, '', class: 'form-control'
+    =text_field_tag :pub0, params[:pub0], class: 'form-control'
 
     =label_tag :page
-    =text_field_tag :page, '', class: 'form-control'
+    =text_field_tag :page, params[:page], class: 'form-control'
     =submit_tag 'Get Offers', class: 'btn btn-default'
 
 - if @offers && @offers.any?
-  - @offers.each do |offer|
-    .offer
-      .title = offer['title']
-      .payout = offer['payout']
-      .thumbnail = image_tag offer['thumbnail']['lowres']
+  %table.table
+    %thead
+      %th Title
+      %th Payout
+      %th Thumbnail
+    %tbody
+    - @offers.each do |offer|
+      %tr.offer
+        %td.title= offer['title']
+        %td.payout= offer['payout']
+        %td= image_tag offer['thumbnail']['lowres'], class: 'thumbnail'
 - else
   .no_offers No offers
